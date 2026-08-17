@@ -23,6 +23,17 @@
     <string name="reload">Reload</string>
     <string name="search">Search</string>
     <string name="help">Help</string>
+    <string name="privileged_access">Privileged access</string>
+    <string name="backend_auto">Automatic</string>
+    <string name="backend_shizuku">Shizuku / Sui (root)</string>
+    <string name="backend_root">Root shell (su)</string>
+    <string name="shizuku_ready">Shizuku is ready to change components.</string>
+    <string name="shizuku_permission_requested">Allow Autostarts in Shizuku to use this access method.</string>
+    <string name="shizuku_permission_denied">Shizuku permission was not granted.</string>
+    <string name="shizuku_not_running">Start Shizuku or Sui, then try again.</string>
+    <string name="shizuku_outdated">Update Shizuku to version 13 or later.</string>
+    <string name="shizuku_adb_unsupported">Shizuku is running through ADB. Changing receivers requires Shizuku root mode or Sui.</string>
+    <string name="shizuku_not_root">Shizuku is not running with root access.</string>
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
@@ -30,6 +41,6 @@
     <string name="sys_disable">This is a system component. Do not make changes unless you know what you are doing.</string>
     <!-- The verb (changing) should be at the front of the string -->
     <string name="changing_state">Changing %1$s...</string>
-    <string name="state_change_failed">Unable to change the state of %1$s (%2$s).\n\nMost likely, your device does not have root access, which is required.</string>
+    <string name="state_change_failed">Unable to change the state of %1$s (%2$s).\n\nCheck that the selected access method is available and has root access.</string>
     <string name="close_help">Close help and return to app</string>
 </resources>

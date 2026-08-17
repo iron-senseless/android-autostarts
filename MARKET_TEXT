@@ -2,4 +2,4 @@ Keep control over your phone: See what applications do behind your back.
 
 Shows you what apps run on phone startup, and what other events trigger in the background. Root users can disable unwanted autostarts and speed up their phone boot.
 
-Note: Root-Access *is* required to make changes. Otherwise, this application will be read-only.
+Note: Root access *is* required to make changes. Use a root shell directly, or root-backed Shizuku or Sui. Otherwise, this application will be read-only.

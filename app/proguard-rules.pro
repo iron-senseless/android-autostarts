@@ -9,6 +9,11 @@
 
 # Add any project specific keep options here:
 
+# Shizuku instantiates this UserService through reflection in a privileged process.
+-keep class com.elsdoerfer.android.autostarts.ShizukuComponentStateService {
+    public <init>(android.content.Context);
+}
+
 # If your project uses WebView with JS, uncomment the following
 # and specify the fully qualified class name to the JavaScript interface
 # class:

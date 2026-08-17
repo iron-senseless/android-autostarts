@@ -2,7 +2,7 @@
 <resources>
     <!--
       The platform Material theme keeps the app dependency-free and compatible
-      back to API 21. DarkActionBar is intentional: the primary bar uses the
+      back to API 24. DarkActionBar is intentional: the primary bar uses the
       app's accessible Material Red 700 brand color, so its title, navigation,
       and overflow controls must use the dark-overlay (white foreground)
       treatment rather than the light theme's black one.

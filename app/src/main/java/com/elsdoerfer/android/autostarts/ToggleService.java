@@ -57,6 +57,7 @@ public class ToggleService extends Service {
 	 * processing, and render them in the UI accordingly.
 	 */
 	protected HashMap<ComponentInfo, Boolean> mStates;
+	protected HashMap<ComponentInfo, ToggleBackend> mBackends;
 	protected LinkedBlockingQueue<ComponentInfo> mQueue;
 
 	private ToggleServiceListener mListener;
@@ -70,6 +71,7 @@ public class ToggleService extends Service {
 	public void onCreate() {
 		super.onCreate();
 		mStates = new LinkedHashMap<ComponentInfo, Boolean>();
+		mBackends = new LinkedHashMap<ComponentInfo, ToggleBackend>();
 		mQueue = new LinkedBlockingQueue<ComponentInfo>();
 		mHandler = new Handler(Looper.getMainLooper());
 	}
@@ -102,10 +104,13 @@ public class ToggleService extends Service {
 			return;
 
 		boolean newState = intent.getBooleanExtra("state", false);
+		ToggleBackend backend = ToggleBackend.fromPreference(
+				intent.getStringExtra(ToggleBackend.EXTRA));
 		// Update an existing queued request without inserting a duplicate. A duplicate
 		// used to leave a queue entry with no matching state and crash on unboxing.
 		if (mStates.put(component, newState) == null)
 			mQueue.offer(component);
+		mBackends.put(component, backend);
 
 		Log.d(Utils.TAG, "Added "+component+" to service queue, now size: "+mStates.size());
 		onQueueModified(component, false);
@@ -142,6 +147,7 @@ public class ToggleService extends Service {
 
 		// See whether we should enable or disable
 		final boolean desiredState = mStates.remove(component);
+		final ToggleBackend backend = mBackends.remove(component);
 
 		Log.d(Utils.TAG, "Processing "+component+", remaining items in queue: "+mStates.size());
 		onActivityChange(component);
@@ -150,8 +156,9 @@ public class ToggleService extends Service {
 			public void run() {
 				mItemBeingProcessed = component;
 				mItemBeingProcessedDesiredState = desiredState;
-				final boolean success =
-						ToggleTool.toggleState(ToggleService.this, component, desiredState);
+				final boolean success = ToggleTool.toggleState(
+						ToggleService.this, component, desiredState,
+						backend != null ? backend : ToggleBackend.AUTO);
 
 				mItemBeingProcessed = null;
 				mHandler.post(new Runnable() {

@@ -7,10 +7,10 @@ android {
     compileSdk 36
     defaultConfig {
         applicationId 'com.elsdoerfer.android.autostarts'
-        minSdk 21
+        minSdk 24
         targetSdk 36
-        versionCode 34
-        versionName "2.1.0"
+        versionCode 35
+        versionName "2.2.0"
     }
     buildTypes {
         release {
@@ -22,8 +22,17 @@ android {
         sourceCompatibility JavaVersion.VERSION_17
         targetCompatibility JavaVersion.VERSION_17
     }
+    buildFeatures {
+        aidl true
+        buildConfig true
+    }
 }
 
 dependencies {
+    def shizukuVersion = '13.1.5'
+
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+    implementation 'androidx.annotation:annotation:1.10.0'
+    implementation "dev.rikka.shizuku:api:$shizukuVersion"
+    implementation "dev.rikka.shizuku:provider:$shizukuVersion"
 }
