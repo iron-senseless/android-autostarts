@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="0dp"
@@ -18,10 +18,10 @@
         android:layout_weight="1"
         android:singleLine="true"
         android:ellipsize="end"
-        android:layout_height="28dp"
-        android:paddingRight="5dip"
-        android:paddingLeft="25dip"
-        android:text="dsf" android:gravity="center_vertical"/>
+        android:layout_height="48dp"
+        android:paddingEnd="5dip"
+        android:paddingStart="25dip"
+        android:gravity="center_vertical"/>
 
 	<!-- Note the right padding is slightly larger to account for a
 	     potential scrollbar. Doesn't look to good if it's too close.
@@ -35,12 +35,12 @@
     <ImageView
         android:id="@+id/show_info"
         android:layout_width="28dp"
-        android:layout_height="28dp"
+        android:layout_height="48dp"
         android:adjustViewBounds="true"
         android:src="@drawable/ic_dialog_info_btn"
         android:layout_gravity="center_vertical"
-        android:layout_marginRight="20dp"
-        android:layout_marginLeft="6dp"/>
+        android:layout_marginEnd="20dp"
+        android:layout_marginStart="6dp"/>
 
     <!--
         TODO: I would prefer to use a single control for both the icon and activity spinner, but
@@ -52,9 +52,9 @@
         android:id="@+id/spinner"
         android:layout_width="28dp"
         android:layout_gravity="center_vertical"
-        android:layout_height="28dp"
+        android:layout_height="48dp"
         android:indeterminate="true"
-        android:visibility="visible" android:layout_marginLeft="6dp"
-        android:layout_marginRight="7dp"/>
+        android:visibility="visible" android:layout_marginStart="6dp"
+        android:layout_marginEnd="7dp"/>
 
 </LinearLayout>

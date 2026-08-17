@@ -1,7 +1,7 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/root"
     android:orientation="horizontal"
-    android:layout_width="fill_parent"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:background="@android:drawable/toast_frame"
     >
@@ -10,7 +10,7 @@
     	android:id="@+id/info"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginRight="13dp"
+        android:layout_marginEnd="13dp"
         android:src="@drawable/ic_dialog_info"
     	/>
 
@@ -20,7 +20,7 @@
         android:id="@+id/title"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_toRightOf="@id/info"
+        android:layout_toEndOf="@id/info"
         android:textAppearance="@android:style/TextAppearance.Small"
         android:textStyle="bold"
         android:textColor="#80ffffff"

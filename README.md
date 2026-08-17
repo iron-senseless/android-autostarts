@@ -28,3 +28,12 @@ Translations
 License
 
  * GPL 3 https://github.com/miracle2k/android-autostarts/blob/master/LICENSE
+
+
+Privacy & Google Play
+---------------------
+
+ * [Privacy policy](PRIVACY.md)
+ * [Google Play installed-app inventory declaration notes](PLAY_STORE.md)
+
+Autostarts supports Android 5.0 (API 21) and later. Viewing is read-only; root or a privileged system installation is required to change another app's receiver state.

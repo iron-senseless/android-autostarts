@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="app_name">Autostarts</string>
+    <string name="service_name">Autostarts component service</string>
 
     <string name="no_receivers">No applications are autostarting.</string>
     <string name="no_receivers_filtered">No applications are autostarting within your current selection.</string>
