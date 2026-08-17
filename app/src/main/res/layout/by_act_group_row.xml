@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:layout_width="fill_parent"
+    android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
-    android:padding="0dp"
+    android:minHeight="48dp"
     android:tag="act-group">
 
     <!-- Note how the padding is applied not to the parent,
@@ -17,7 +17,7 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:layout_marginLeft="32dp"
+        android:layout_marginStart="32dp"
         android:layout_weight="1"
         android:singleLine="true"
         android:ellipsize="end"
@@ -38,10 +38,10 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="center_vertical"
-        android:paddingLeft="6dp"
+        android:paddingStart="6dp"
         android:paddingTop="6dp"
         android:paddingBottom="6dp"
-        android:paddingRight="20dp"
+        android:paddingEnd="20dp"
         android:adjustViewBounds="false"
         android:src="@drawable/ic_dialog_info_btn"
         />

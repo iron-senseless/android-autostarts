@@ -1,0 +1,4 @@
+Updated for current Android releases while retaining Android 5.0 support.
+Added dark theme, larger touch targets, and improved right-to-left layouts.
+Restored complete app discovery on Android 11 and later.
+Improved reliability when several component changes are queued.

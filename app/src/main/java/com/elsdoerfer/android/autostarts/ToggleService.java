@@ -6,6 +6,8 @@ import android.content.res.Resources;
 import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
+import android.os.Build;
+import android.os.Looper;
 import android.util.Log;
 import android.widget.Toast;
 import com.elsdoerfer.android.autostarts.db.ComponentInfo;
@@ -69,14 +71,9 @@ public class ToggleService extends Service {
 		super.onCreate();
 		mStates = new LinkedHashMap<ComponentInfo, Boolean>();
 		mQueue = new LinkedBlockingQueue<ComponentInfo>();
-		mHandler = new Handler();
+		mHandler = new Handler(Looper.getMainLooper());
 	}
 
-	// To support API Levels <= 4 (pre 2.0).
-	@Override
-	public void onStart(Intent intent, int startId) {
-		handleStart(intent, startId);
-	}
 
 	/**
 	 * Clients should start this service with an intent to submit jobs.
@@ -85,19 +82,30 @@ public class ToggleService extends Service {
 	synchronized public int onStartCommand(Intent intent, int flags, int startId) {
 		handleStart(intent, startId);
 
-		// TODO: While we would want the service to be sticky, this makes no sense so
-		//   long we don't actually persist our change queue somewhere. So we should
-		//   do that, and then change the mode here.
-		return START_REDELIVER_INTENT;
+		// Jobs are not persisted, so never ask Android to redeliver a stale intent.
+		return START_NOT_STICKY;
 	}
 
 	void handleStart(Intent intent, int startId) {
 		// Add the new job to the queue, or change the desired state
 		// of the job currently in the queue.
-		ComponentInfo component = intent.getParcelableExtra("component");
+		if (intent == null)
+			return;
+
+		ComponentInfo component;
+		if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+			component = intent.getParcelableExtra("component", ComponentInfo.class);
+		} else {
+			component = intent.getParcelableExtra("component");
+		}
+		if (component == null)
+			return;
+
 		boolean newState = intent.getBooleanExtra("state", false);
-		if (mStates.put(component,  newState) == null);
-		mQueue.offer(component);
+		// Update an existing queued request without inserting a duplicate. A duplicate
+		// used to leave a queue entry with no matching state and crash on unboxing.
+		if (mStates.put(component, newState) == null)
+			mQueue.offer(component);
 
 		Log.d(Utils.TAG, "Added "+component+" to service queue, now size: "+mStates.size());
 		onQueueModified(component, false);

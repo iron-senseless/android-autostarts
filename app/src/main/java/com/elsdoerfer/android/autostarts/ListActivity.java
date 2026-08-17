@@ -47,6 +47,7 @@ public class ListActivity extends ExpandableListActivity {
 	SharedPreferences mPrefs;
 	private Boolean mExpandSuggested = true;
 	private LoadTask mLoadTask;
+	private boolean mServiceBound;
 
 	protected ToggleService mToggleService;
 
@@ -151,7 +152,7 @@ public class ListActivity extends ExpandableListActivity {
 				? MyExpandableListAdapter.GROUP_BY_PACKAGE
 				: MyExpandableListAdapter.GROUP_BY_ACTION);
 
-		bindService(new Intent(this, ToggleService.class),
+		mServiceBound = bindService(new Intent(this, ToggleService.class),
 				mToggleServiceConnection, Context.BIND_AUTO_CREATE);
 
 		// Init/restore retained and instance data. If we have data
@@ -261,8 +262,9 @@ public class ListActivity extends ExpandableListActivity {
 		// Unattach the activity from a potentially running task.
 		if (mLoadTask != null)
 			mLoadTask.attach(null);
-		if (mToggleService != null) {
+		if (mServiceBound) {
 			unbindService(mToggleServiceConnection);
+			mServiceBound = false;
 			mToggleService = null;
 		}
 		super.onDestroy();
