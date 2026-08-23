@@ -1,7 +1,10 @@
 <selector xmlns:android="http://schemas.android.com/apk/res/android" >
     <item android:state_pressed="true">
         <bitmap android:src="@drawable/ic_action_action_info"
-                android:tint="#ff29b2ff" />
+                android:tint="?android:attr/colorAccent" />
     </item>
-    <item android:drawable="@drawable/ic_action_action_info" />
+    <item>
+        <bitmap android:src="@drawable/ic_action_action_info"
+                android:tint="?android:attr/textColorSecondary" />
+    </item>
 </selector>

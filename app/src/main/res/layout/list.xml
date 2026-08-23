@@ -4,6 +4,7 @@
          android:layout_width="match_parent"
          android:layout_height="match_parent"
          android:gravity="center"
+         android:background="?android:attr/colorBackground"
          android:fitsSystemWindows="true"
          >
 
@@ -20,6 +21,7 @@
                android:layout_height="match_parent"
                android:gravity="center_horizontal|center_vertical"
                android:text="@string/no_receivers"
+               android:textColor="?android:attr/textColorPrimary"
                android:visibility="gone"/>
 
      <ProgressBar

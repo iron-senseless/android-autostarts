@@ -9,10 +9,10 @@ import java.util.Comparator;
 import java.util.HashMap;
 
 import android.content.Context;
-import android.graphics.Color;
 import android.graphics.Typeface;
 import android.text.SpannableStringBuilder;
 import android.text.style.StrikethroughSpan;
+import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
@@ -320,13 +320,20 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 		 *
 		 * Arguments can be null.
 		 */
+		protected int getThemeColor(int attribute) {
+			TypedValue value = new TypedValue();
+			if (!mParent.mActivity.getTheme().resolveAttribute(attribute, value, true))
+				throw new IllegalStateException("Theme is missing color attribute " + attribute);
+			return value.resourceId != 0
+					? mParent.mActivity.getResources().getColor(value.resourceId)
+					: value.data;
+		}
+
 		protected void setTextStyle(TextView t, PackageInfo pkg,
 				ComponentInfo comp) {
-			if (pkg!= null && pkg.isSystem)
-				t.setTextColor(Color.YELLOW);
-			else
-				t.setTextColor(mParent.mActivity.getResources().getColor(
-						android.R.color.primary_text_dark));
+			int textColorAttribute = pkg != null && pkg.isSystem
+					? android.R.attr.textColorSecondary : android.R.attr.textColorPrimary;
+			t.setTextColor(getThemeColor(textColorAttribute));
 
 			if (comp != null && comp.isCurrentlyEnabled() != comp.defaultEnabled)
 				t.setTypeface(Typeface.DEFAULT_BOLD);
