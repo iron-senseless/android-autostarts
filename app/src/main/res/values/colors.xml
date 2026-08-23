@@ -1,11 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- Semantic roles are assigned by the light and night AppTheme variants. -->
-    <color name="primary">#3F51B5</color>
-    <color name="primary_dark">#303F9F</color>
+    <!-- Material Red 700: close to the car icon red and 4.98:1 with white. -->
+    <color name="brand_red">#D32F2F</color>
+    <color name="brand_red_dark">#B71C1C</color>
+    <color name="primary">@color/brand_red</color>
+    <color name="primary_dark">@color/brand_red_dark</color>
 
-    <color name="accent_light">#B64A25</color>
-    <color name="accent_dark">#FFB59E</color>
+    <color name="accent_light">#C62828</color>
+    <color name="accent_dark">#FF8A80</color>
 
     <color name="surface_light">#FBF9FD</color>
     <color name="surface_dark">#121318</color>
