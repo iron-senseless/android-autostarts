@@ -2,7 +2,7 @@
 <!-- paddingEnd chosen so that the he spinners align with INFO icon from parent category row -->
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="48dp"
 	android:paddingTop="10dp"
 	android:paddingBottom="10dp"
 	android:paddingEnd="8dip"
@@ -12,7 +12,8 @@
     <ImageView
         android:id="@+id/icon"
         android:layout_width="28dp"
-        android:layout_height="wrap_content"
+        android:layout_height="28dp"
+        android:layout_centerVertical="true"
         android:paddingEnd="5sp"
         />
 
@@ -21,16 +22,19 @@
         android:layout_toEndOf="@id/icon"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_centerVertical="true"
         android:singleLine="true"
         android:ellipsize="end"
+        android:textColor="?android:attr/textColorPrimary"
         android:textStyle="normal"
         android:gravity="center_vertical"/>
 
     <ProgressBar
         android:id="@+id/spinner"
         android:layout_alignParentEnd="true"
+        android:layout_centerVertical="true"
         android:layout_width="28dp"
-        android:layout_height="wrap_content"
+        android:layout_height="28dp"
         android:indeterminate="true"
         android:visibility="visible" />
 

@@ -25,6 +25,7 @@
         android:singleLine="true"
         android:ellipsize="end"
         android:gravity="center_vertical"
+        android:textColor="?android:attr/textColorPrimary"
         android:textStyle="bold" />
 
 </RelativeLayout>

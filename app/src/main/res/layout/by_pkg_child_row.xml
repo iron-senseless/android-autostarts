@@ -21,7 +21,8 @@
         android:layout_height="48dp"
         android:paddingEnd="5dip"
         android:paddingStart="25dip"
-        android:gravity="center_vertical"/>
+        android:gravity="center_vertical"
+        android:textColor="?android:attr/textColorPrimary"/>
 
 	<!-- Note the right padding is slightly larger to account for a
 	     potential scrollbar. Doesn't look to good if it's too close.

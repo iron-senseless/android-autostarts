@@ -1,13 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <!-- The platform Material theme keeps the app dependency-free and compatible back to API 21. -->
-    <style name="AppTheme" parent="android:style/Theme.Material.Light">
+    <!--
+      The platform Material theme keeps the app dependency-free and compatible
+      back to API 21. DarkActionBar is intentional: the primary bar is blue,
+      so its title, navigation, and overflow controls must use the dark-overlay
+      (white foreground) treatment rather than the light theme's black one.
+    -->
+    <style name="AppTheme" parent="android:style/Theme.Material.Light.DarkActionBar">
         <item name="android:fontFamily">sans</item>
         <item name="android:colorPrimary">@color/primary</item>
         <item name="android:colorPrimaryDark">@color/primary_dark</item>
-        <item name="android:colorAccent">@color/accent</item>
-        <item name="android:navigationBarColor">@color/surface_dark</item>
-        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:colorAccent">@color/accent_light</item>
+        <item name="android:windowBackground">@color/surface_light</item>
+        <item name="android:colorBackground">@color/surface_light</item>
+        <!-- We provide an explicit night palette; do not auto-invert it. -->
+        <item name="android:forceDarkAllowed">false</item>
+        <item name="android:textColorPrimary">@color/text_primary_light</item>
+        <item name="android:textColorSecondary">@color/text_secondary_light</item>
+        <item name="android:listDivider">@color/divider_light</item>
+        <item name="android:navigationBarColor">@color/navigation_surface_light</item>
+        <item name="android:windowLightStatusBar">false</item>
         <item name="android:statusBarColor">@color/primary_dark</item>
     </style>
 </resources>
