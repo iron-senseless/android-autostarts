@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Record and verify emulator-backed visual regression screenshots.
 
-The reference images deliberately contain only the application surface. System
-bars are cropped away because their clock and gesture indicator are not stable
-between runs.
+The suite covers the light and dark event lists, expanded event rows, the
+package grouping, and the overflow menu. Reference images deliberately contain
+only the application surface: system bars are cropped away because their clock
+and gesture indicator are not stable between runs.
 """
 
 import argparse
@@ -14,6 +15,7 @@ import struct
 import subprocess
 import sys
 import time
+import xml.etree.ElementTree as ET
 import zlib
 
 
@@ -236,7 +238,7 @@ class Device:
         if "Physical density: 420" not in density:
             raise HarnessError("visual goldens require 420 dpi; got: {}".format(density.strip()))
 
-    def prepare(self):
+    def prepare(self, night):
         # These settings make rendering deterministic. They are intentionally best
         # effort: some physical devices restrict individual settings to the shell.
         for setting in (
@@ -246,7 +248,7 @@ class Device:
             ("system", "font_scale", "1.0"),
         ):
             self.command("shell", "settings", "put", *setting, check=False)
-        self.command("shell", "cmd", "uimode", "night", "no", check=False)
+        self.command("shell", "cmd", "uimode", "night", "yes" if night else "no", check=False)
         self.command("shell", "am", "force-stop", PACKAGE, check=False)
         self.command("shell", "pm", "clear", PACKAGE, check=False)
         # LoadTask logs this only from onPostExecute(), after its asynchronous
@@ -278,17 +280,53 @@ class Device:
             time.sleep(0.5)
         raise HarnessError("the initial receiver scan did not finish within 60 seconds")
 
-    def wait_for_text(self, text, present=True):
+    def hierarchy(self):
+        self.command("shell", "uiautomator", "dump", "/sdcard/autostarts-window.xml", check=False)
+        raw = self.command("exec-out", "cat", "/sdcard/autostarts-window.xml", capture=True, check=False)
+        try:
+            return ET.fromstring(raw)
+        except ET.ParseError as error:
+            raise HarnessError("could not parse the visible UI hierarchy: {}".format(error))
+
+    @staticmethod
+    def find_node(root, *, text=None, resource_id=None):
+        for node in root.iter("node"):
+            if text is not None and node.get("text") != text:
+                continue
+            if resource_id is not None and node.get("resource-id") != resource_id:
+                continue
+            return node
+        return None
+
+    def wait_for_node(self, *, text=None, resource_id=None, present=True):
         deadline = time.monotonic() + 15
-        marker = 'text="{}"'.format(text).encode("utf-8")
         while time.monotonic() < deadline:
-            self.command("shell", "uiautomator", "dump", "/sdcard/autostarts-window.xml", check=False)
-            hierarchy = self.command("exec-out", "cat", "/sdcard/autostarts-window.xml", capture=True, check=False)
-            if (marker in hierarchy) == present:
-                return
+            node = self.find_node(self.hierarchy(), text=text, resource_id=resource_id)
+            if (node is not None) == present:
+                return node
             time.sleep(0.5)
+        selector = "text={!r}".format(text) if text is not None else "resource-id={!r}".format(resource_id)
         expectation = "find" if present else "dismiss"
-        raise HarnessError("did not {} {!r} in the visible UI hierarchy".format(expectation, text))
+        raise HarnessError("did not {} {} in the visible UI hierarchy".format(expectation, selector))
+
+    def wait_for_text(self, text, present=True):
+        return self.wait_for_node(text=text, present=present)
+
+    def tap_node(self, node):
+        bounds = node.get("bounds", "")
+        try:
+            left_top, right_bottom = bounds[1:-1].split("][")
+            left, top = (int(value) for value in left_top.split(","))
+            right, bottom = (int(value) for value in right_bottom.split(","))
+        except (ValueError, IndexError):
+            raise HarnessError("invalid UI node bounds: {!r}".format(bounds))
+        self.command("shell", "input", "tap", str((left + right) // 2), str((top + bottom) // 2))
+
+    def tap_text(self, text):
+        self.tap_node(self.wait_for_node(text=text))
+
+    def tap_resource(self, resource_id):
+        self.tap_node(self.wait_for_node(resource_id=resource_id))
 
     def screenshot(self):
         png = self.command("exec-out", "screencap", "-p", capture=True)
@@ -316,6 +354,18 @@ class Device:
                 return image
             time.sleep(1)
         raise HarnessError("{} never produced three stable frames".format(scene))
+
+    def warm_action_bar(self):
+        # The legacy platform action bar applies its final action-item state
+        # during its first overflow-menu preparation.
+        self.command("shell", "input", "keyevent", "KEYCODE_MENU")
+        self.wait_for_text("Help")
+        self.command("shell", "input", "keyevent", "KEYCODE_BACK")
+        self.wait_for_text("Help", present=False)
+
+    def open_overflow(self):
+        self.command("shell", "input", "keyevent", "KEYCODE_MENU")
+        self.wait_for_text("Help")
 
 
 def choose_serial(adb):
@@ -382,24 +432,43 @@ def main():
         device.validate_profile()
         if not arguments.skip_build:
             build()
-        device.prepare()
+        device.prepare(night=False)
         device.install_and_launch()
+        device.warm_action_bar()
 
-        # The legacy platform action bar applies its final action-item state
-        # during its first overflow-menu preparation. Warm it once so the main
-        # screenshot does not depend on whether Android has prepared that menu.
-        device.command("shell", "input", "keyevent", "KEYCODE_MENU")
-        device.wait_for_text("Help")
-        device.command("shell", "input", "keyevent", "KEYCODE_BACK")
-        device.wait_for_text("Help", present=False)
+        passed = process_scene(
+            arguments.mode, "light-event-list", device.stable_screenshot("light-event-list"))
 
-        list_image = device.stable_screenshot("list")
-        passed = process_scene(arguments.mode, "list", list_image)
+        # This scene catches regressions where application icons accidentally
+        # determine the row height while grouping by event.
+        device.tap_text("During Startup")
+        device.wait_for_text("Calendar Storage")
+        passed = process_scene(
+            arguments.mode, "light-event-expanded",
+            device.stable_screenshot("light-event-expanded")) and passed
 
-        device.command("shell", "input", "keyevent", "KEYCODE_MENU")
-        device.wait_for_text("Help")
-        overflow_image = device.stable_screenshot("overflow")
-        passed = process_scene(arguments.mode, "overflow", overflow_image) and passed
+        device.tap_resource(PACKAGE + ":id/grouping")
+        device.wait_for_text("Android Auto")
+        passed = process_scene(
+            arguments.mode, "light-package-list", device.stable_screenshot("light-package-list")) and passed
+
+        device.open_overflow()
+        passed = process_scene(
+            arguments.mode, "light-overflow", device.stable_screenshot("light-overflow")) and passed
+
+        device.prepare(night=True)
+        device.install_and_launch()
+        device.warm_action_bar()
+        passed = process_scene(
+            arguments.mode, "dark-event-list", device.stable_screenshot("dark-event-list")) and passed
+
+        # The expanded dark scene specifically protects foreground/background
+        # contrast for component labels as well as the compact row geometry.
+        device.tap_text("During Startup")
+        device.wait_for_text("Calendar Storage")
+        passed = process_scene(
+            arguments.mode, "dark-event-expanded",
+            device.stable_screenshot("dark-event-expanded")) and passed
     except HarnessError as error:
         print("visual regression harness: {}".format(error), file=sys.stderr)
         return 2

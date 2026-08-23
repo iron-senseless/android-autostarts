@@ -1,59 +1,69 @@
-# Emulator visual regression tests
+# Emulator visual regression suite
 
-`scripts/visual-regression.py` is a repeatable, emulator-backed screenshot test
-for the app's main list and overflow menu. It builds the debug APK, installs it
-on an emulator, clears the app's state, waits for the UI to stop changing, and
-compares the rendered application surface with the checked-in PNG goldens.
+`scripts/visual-regression.py` builds the debug APK, installs it on a pinned
+emulator, drives a small set of representative UI paths, and compares the
+rendered app surface with checked-in PNG goldens in `expected/`.
 
-The checked-in images are intentionally cropped to the application window:
-status-bar time, notification icons, and the gesture pill are system UI and
-would make a screenshot test flaky.
+The suite intentionally covers the visual failures that are easiest to
+reintroduce while modernising this legacy UI:
 
-## Required emulator profile
+- light event list;
+- light expanded event group, including compact app rows;
+- light package grouping;
+- light overflow menu;
+- dark event list; and
+- dark expanded event group, including label contrast.
 
-The goldens are pinned to the existing `Pixel_2_API_33` profile in portrait:
+Each expected image is cropped to the application window. Status-bar clocks,
+notification icons, and the gesture pill are system UI, so including them would
+make comparisons flaky.
 
-- Android API 33
-- 1080 × 1920 pixels
-- 420 dpi
-- light system mode
+## Pinned emulator profile
 
-Start it before running the harness:
+Goldens are tied to the existing `Pixel_2_API_33` AVD in portrait:
 
-```bash
-emulator -avd Pixel_2_API_33
-```
+- Android API 33;
+- 1080 × 1920 pixels;
+- 420 dpi; and
+- the emulator's installed system-package set.
 
-If more than one adb device is connected, select this one explicitly:
-
-```bash
-AUTOSTARTS_SCREENSHOT_SERIAL=emulator-5554 ./scripts/visual-regression.py verify
-```
-
-The legacy branch uses Gradle 6.5, which needs a compatible JDK such as JDK 11:
+Start that emulator before using the suite. It is deliberately not launched by
+the script:
 
 ```bash
-JAVA_HOME="$(/usr/libexec/java_home -v 11)" \
-  ./scripts/visual-regression.py verify
+emulator -avd Pixel_2_API_33 -gpu host
 ```
 
-The modernized branch's Gradle wrapper requires JDK 17.
+The harness refuses profiles with a different size or density before it clears
+app state, so it cannot accidentally use the connected Pixel. When more than
+one ADB device is available, select the emulator explicitly:
+
+```bash
+AUTOSTARTS_SCREENSHOT_SERIAL=emulator-5554 \
+  uv run scripts/visual-regression.py verify
+```
+
+The project uses Gradle with JDK 17. The script itself has no Python
+third-party dependencies.
 
 ## Commands
 
 ```bash
-# Build, install, capture, and compare against screenshot-tests/expected/.
-./scripts/visual-regression.py verify
+# Build, install, capture every scene, and compare it with the checked-in PNGs.
+AUTOSTARTS_SCREENSHOT_SERIAL=emulator-5554 \
+  uv run scripts/visual-regression.py verify
 
-# Deliberately replace the checked-in PNG goldens after reviewing a visual change.
-./scripts/visual-regression.py record
+# Deliberately refresh every checked-in baseline after reviewing a visual change.
+AUTOSTARTS_SCREENSHOT_SERIAL=emulator-5554 \
+  uv run scripts/visual-regression.py record
 ```
 
-`verify` writes the captured PNGs to `app/build/visual-screenshots/`. On a
-mismatch it also writes a red-highlighted `*-diff.png` there, so the rendered
-difference can be inspected without replacing a baseline.
+`verify` writes the captured images to `app/build/visual-screenshots/`. On a
+mismatch it also emits a red-highlighted `*-diff.png` there. `record` is the
+only mode that overwrites the versioned PNG goldens.
 
-The harness disables emulator animation scales, requests light mode, clears the
-app package, and uses an exact device profile. Do not use the goldens as a
-cross-device assertion; refresh them only on the pinned profile and review PNG
-changes in the corresponding merge request.
+The harness disables emulator animation scales, sets the requested light or
+dark system mode, clears only the emulator's Autostarts app data, waits for the
+receiver scan to finish, and requires three identical app-only frames before
+capturing each scene. Refresh baselines only on the pinned AVD and review PNG
+diffs like any other source change.
