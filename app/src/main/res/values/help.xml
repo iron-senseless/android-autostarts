@@ -10,7 +10,7 @@
     </string-array>
     <string-array name="faq2">
         <item>Can I remove an application from a particular event?</item>
-        <item>Yes, but due to Android API limitations, it only works on rooted devices. <b>Please be careful when disabling stuff.</b> In particular note that the component in question may be responsible for other parts of the application\'s functionality than just the given event. As a result, you may experience unintended side effects. For the most part though, you can just give things a try, and enable the component again should the application break.</item>
+        <item>Yes, but due to Android API limitations, it only works with root access. You can use a root shell directly, or root-backed Shizuku or Sui. <b>Please be careful when disabling stuff.</b> In particular note that the component in question may be responsible for other parts of the application\'s functionality than just the given event. As a result, you may experience unintended side effects. For the most part though, you can just give things a try, and enable the component again should the application break.</item>
     </string-array>
     <string-array name="faq3">
         <item>When I activate the \"show changed only\" filter, why do I see stuff that I never actually modified?</item>

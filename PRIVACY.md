@@ -4,4 +4,4 @@ Autostarts reads the installed application list and application manifests on the
 
 Autostarts does not collect, transmit, sell, or share personal data or the installed application list. It contains no analytics, advertising, account system, or network permission.
 
-Changing another application's receiver state is optional and requires root access (or a privileged system installation). Without that access, Autostarts remains a read-only viewer.
+Changing another application's receiver state is optional and requires root access, root-backed Shizuku/Sui access, or a privileged system installation. Without that access, Autostarts remains a read-only viewer.

@@ -1,6 +1,11 @@
 Android Autostarts Management Utility
 -------------------------------------
 
+Requires Android 7.0 or later. Changing a receiver requires root access: use a
+root shell directly, or choose root-backed Shizuku or Sui from Privileged access.
+Shizuku started through ADB or wireless debugging cannot change individual
+receivers and is intentionally not offered for that operation.
+
 [![BundleCop](https://api.bundlecop.com/badge/268318521568755716.svg?file=Android-Autostarts-Full.apk&label=APK%20Size)](https://app.bundlecop.com/project/268318521535987716)
 
 Website

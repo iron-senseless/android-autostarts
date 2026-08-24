@@ -45,6 +45,9 @@ public class ToggleService extends Service {
 		 * or finished processing the current one).
 		 */
 		void onQueueModified(ComponentInfo component, boolean isAdded);
+
+		/** Called when an attempted component-state change could not complete. */
+		void onStateChangeFailed(ComponentInfo component);
 	}
 
 	/**
@@ -57,6 +60,7 @@ public class ToggleService extends Service {
 	 * processing, and render them in the UI accordingly.
 	 */
 	protected HashMap<ComponentInfo, Boolean> mStates;
+	protected HashMap<ComponentInfo, ToggleBackend> mBackends;
 	protected LinkedBlockingQueue<ComponentInfo> mQueue;
 
 	private ToggleServiceListener mListener;
@@ -70,6 +74,7 @@ public class ToggleService extends Service {
 	public void onCreate() {
 		super.onCreate();
 		mStates = new LinkedHashMap<ComponentInfo, Boolean>();
+		mBackends = new LinkedHashMap<ComponentInfo, ToggleBackend>();
 		mQueue = new LinkedBlockingQueue<ComponentInfo>();
 		mHandler = new Handler(Looper.getMainLooper());
 	}
@@ -102,10 +107,13 @@ public class ToggleService extends Service {
 			return;
 
 		boolean newState = intent.getBooleanExtra("state", false);
+		ToggleBackend backend = ToggleBackend.fromPreference(
+				intent.getStringExtra(ToggleBackend.EXTRA));
 		// Update an existing queued request without inserting a duplicate. A duplicate
 		// used to leave a queue entry with no matching state and crash on unboxing.
 		if (mStates.put(component, newState) == null)
 			mQueue.offer(component);
+		mBackends.put(component, backend);
 
 		Log.d(Utils.TAG, "Added "+component+" to service queue, now size: "+mStates.size());
 		onQueueModified(component, false);
@@ -142,6 +150,7 @@ public class ToggleService extends Service {
 
 		// See whether we should enable or disable
 		final boolean desiredState = mStates.remove(component);
+		final ToggleBackend backend = mBackends.remove(component);
 
 		Log.d(Utils.TAG, "Processing "+component+", remaining items in queue: "+mStates.size());
 		onActivityChange(component);
@@ -150,30 +159,27 @@ public class ToggleService extends Service {
 			public void run() {
 				mItemBeingProcessed = component;
 				mItemBeingProcessedDesiredState = desiredState;
-				final boolean success =
-						ToggleTool.toggleState(ToggleService.this, component, desiredState);
+				final boolean success = ToggleTool.toggleState(
+						ToggleService.this, component, desiredState,
+						backend != null ? backend : ToggleBackend.AUTO);
 
 				mItemBeingProcessed = null;
 				mHandler.post(new Runnable() {
 					@Override
 					public void run() {
 						if (!success) {
-							// Now that we do state toggling in the background in the
-							// service, error handling poses new challenges. For now,
-							// just show a toast. However, I never liked toasts, of course.
-							// Options include notifications, as well as additional clever
-							// integration with an activity that might be in the foreground.
-							Resources res = getResources();
-							Toast toast = Toast.makeText(
-								ToggleService.this,
-								String.format(res.getString(R.string.state_change_failed),
-									// TODO: Instead of the component name, it would be
-									// better to refer to the event the user wanted to
-									// to remove the component from. Unfortunately, we do
-									// not even carry this information along.
-									component.getLabel(), component.componentName),
-								5000);
-							toast.show();
+							ToggleServiceListener listener = mListener;
+							if (listener != null) {
+								listener.onStateChangeFailed(component);
+							} else {
+								// The foreground activity normally presents this as a dialog.
+								// Keep a fallback for a job that finishes after it disconnects.
+								Resources res = getResources();
+								Toast.makeText(ToggleService.this,
+										String.format(res.getString(R.string.state_change_failed),
+												component.getLabel(), component.componentName),
+										Toast.LENGTH_LONG).show();
+							}
 						}
 
 						Log.d(Utils.TAG, "Processing "+component+" done");

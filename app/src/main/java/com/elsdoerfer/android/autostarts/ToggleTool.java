@@ -22,10 +22,15 @@ signature-protected. Rarely will we be signed with the system
 certificate, but for what it's worth, if we do have the permission,
 we'll use it and make the call directly.
 
-Normally we don't, and that means we need to use root to make a su
-call to the "pm" command. "pm" is included in Android and is a command
-line interface to the PackageManager service. Called as root, the
-PackageManager will skip the permissions check.
+When root-backed Shizuku or Sui is selected, a Shizuku UserService calls the
+same public PackageManager API directly under the root identity. This avoids
+root-shell parsing and per-toggle process startup. Shizuku started with ADB is deliberately not
+used here: Android restricts the shell UID from changing arbitrary individual
+component states.
+
+Otherwise, we use root to make a su call to the "pm" command. "pm" is included
+in Android and is a command line interface to the PackageManager service.
+Called as root, the PackageManager will skip the permissions check.
 
 Ideally, here's where the story would end. Unfortunately, there seems
 to be a bug *somewhere* (in Dalvik? In the Superuser Whitelist app?)
@@ -92,6 +97,11 @@ class ToggleTool {
 	}
 
 	static protected Boolean toggleState(Context context, ComponentInfo component, boolean doEnable) {
+		return toggleState(context, component, doEnable, ToggleBackend.AUTO);
+	}
+
+	static protected Boolean toggleState(Context context, ComponentInfo component, boolean doEnable,
+			ToggleBackend requestedBackend) {
 		Log.i(Utils.TAG, "Asking package manger to "+
 				"change component state to "+
 				(doEnable ? "enabled": "disabled"));
@@ -110,6 +120,16 @@ class ToggleTool {
 			return (component.isCurrentlyEnabled() == doEnable);
 		}
 		else {
+			ToggleBackend backend = requestedBackend != null
+					? requestedBackend : ToggleBackend.AUTO;
+			ShizukuBackend shizuku = ShizukuBackend.get(context);
+			if (backend == ToggleBackend.SHIZUKU ||
+					(backend == ToggleBackend.AUTO &&
+							shizuku.getStatus() == ShizukuBackend.Status.READY)) {
+				Log.i(Utils.TAG, "Changing state through root Shizuku/Sui access");
+				return shizuku.toggleState(component, doEnable);
+			}
+
 			Log.i(Utils.TAG, "Changing state by employing root access");
 
 			ContentResolver cr = context.getContentResolver();

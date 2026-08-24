@@ -36,15 +36,16 @@
 	-->
     <ImageView
         android:id="@+id/show_info"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
+        android:layout_width="48dp"
+        android:layout_height="48dp"
         android:layout_gravity="center_vertical"
-        android:paddingStart="6dp"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp"
-        android:paddingEnd="20dp"
-        android:adjustViewBounds="false"
-        android:src="@drawable/ic_dialog_info_btn"
+        android:layout_marginEnd="8dp"
+        android:background="?android:attr/selectableItemBackgroundBorderless"
+        android:contentDescription="@string/show_event_info"
+        android:padding="12dp"
+        android:scaleType="center"
+        android:src="@drawable/ic_action_info_outline"
+        android:tint="?android:attr/textColorSecondary"
         />
 
 </LinearLayout>

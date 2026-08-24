@@ -36,6 +36,10 @@
           android:icon="@drawable/ic_action_navigation_refresh"
           android:title="@string/reload" />
 
+    <item android:id="@+id/backend"
+          android:title="@string/privileged_access"
+          android:showAsAction="never" />
+
     <item android:id="@+id/help"
           android:icon="@drawable/ic_action_action_help"
           android:title="@string/help" />

@@ -2,11 +2,13 @@ package com.elsdoerfer.android.autostarts;
 
 import java.util.ArrayList;
 
+import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.ExpandableListActivity;
 import android.app.Fragment;
 import android.app.FragmentTransaction;
 import android.content.*;
+import android.content.pm.PackageManager;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.os.IBinder;
@@ -25,6 +27,8 @@ import android.widget.Toast;
 import com.elsdoerfer.android.autostarts.db.ComponentInfo;
 import com.elsdoerfer.android.autostarts.db.IntentFilterInfo;
 
+import rikka.shizuku.Shizuku;
+
 public class ListActivity extends ExpandableListActivity {
 
 	static final Boolean LOGV = false;
@@ -34,6 +38,7 @@ public class ListActivity extends ExpandableListActivity {
 	static final String PREF_FILTER_SHOW_CHANGED = "show-changed-only";
 	static final String PREF_FILTER_UNKNOWN = "filter-unknown-events";
 	static final String PREF_GROUPING = "grouping";
+	static final String PREF_ACCESS_BACKEND = "access-backend";
 
 	private Menu mActionBarMenu;
 	private MenuItem mExpandCollapseToggleItem;
@@ -48,8 +53,42 @@ public class ListActivity extends ExpandableListActivity {
 	private Boolean mExpandSuggested = true;
 	private LoadTask mLoadTask;
 	private boolean mServiceBound;
+	private ShizukuBackend mShizukuBackend;
 
 	protected ToggleService mToggleService;
+
+	private final Shizuku.OnBinderReceivedListener mShizukuBinderReceivedListener =
+			new Shizuku.OnBinderReceivedListener() {
+				@Override
+				public void onBinderReceived() {
+					invalidateOptionsMenu();
+				}
+			};
+
+	private final Shizuku.OnBinderDeadListener mShizukuBinderDeadListener =
+			new Shizuku.OnBinderDeadListener() {
+				@Override
+				public void onBinderDead() {
+					invalidateOptionsMenu();
+				}
+			};
+
+	private final Shizuku.OnRequestPermissionResultListener mShizukuPermissionListener =
+			new Shizuku.OnRequestPermissionResultListener() {
+				@Override
+				public void onRequestPermissionResult(int requestCode, int grantResult) {
+					if (requestCode != ShizukuBackend.PERMISSION_REQUEST_CODE)
+						return;
+
+					if (grantResult == PackageManager.PERMISSION_GRANTED) {
+						Toast.makeText(ListActivity.this, R.string.shizuku_ready,
+								Toast.LENGTH_SHORT).show();
+					} else {
+						showPrivilegedAccessDialog(R.string.shizuku_permission_denied);
+					}
+					invalidateOptionsMenu();
+				}
+			};
 
 	private ServiceConnection mToggleServiceConnection = new ServiceConnection() {
 		public void onServiceConnected(ComponentName className, IBinder service) {
@@ -104,6 +143,12 @@ public class ListActivity extends ExpandableListActivity {
 
 					mListAdapter.notifyDataSetInvalidated();
 				}
+
+				@Override
+				public void onStateChangeFailed(ComponentInfo component) {
+					showErrorDialog(getString(R.string.state_change_failed,
+							component.getLabel(), component.componentName));
+				}
 			});
 
 			// The list adapter require access to the ToggleService to show
@@ -125,6 +170,8 @@ public class ListActivity extends ExpandableListActivity {
 	@Override
 	public void onCreate(final Bundle saved) {
 		super.onCreate(saved);
+
+		mShizukuBackend = ShizukuBackend.get(this);
 
 		requestWindowFeature(Window.FEATURE_INDETERMINATE_PROGRESS);
 		requestWindowFeature(Window.FEATURE_PROGRESS);
@@ -188,6 +235,12 @@ public class ListActivity extends ExpandableListActivity {
 
 		// This depends both on preferences on loading status.
 		updateEmptyText();
+
+		// Register after the menu and preferences can safely be invalidated by a
+		// sticky binder callback.
+		Shizuku.addBinderReceivedListenerSticky(mShizukuBinderReceivedListener);
+		Shizuku.addBinderDeadListener(mShizukuBinderDeadListener);
+		Shizuku.addRequestPermissionResultListener(mShizukuPermissionListener);
 	}
 
 	private void setDefaultTitle() {
@@ -257,6 +310,9 @@ public class ListActivity extends ExpandableListActivity {
 
 	@Override
 	protected void onDestroy() {
+		Shizuku.removeBinderReceivedListener(mShizukuBinderReceivedListener);
+		Shizuku.removeBinderDeadListener(mShizukuBinderDeadListener);
+		Shizuku.removeRequestPermissionResultListener(mShizukuPermissionListener);
 		if (mDb != null)
 			mDb.close();
 		// Unattach the activity from a potentially running task.
@@ -387,6 +443,11 @@ public class ListActivity extends ExpandableListActivity {
 			return true;
 		}
 
+		else if (id == R.id.backend) {
+			showBackendChooser();
+			return true;
+		}
+
 		else if (id == R.id.expand) {
 			ExpandableListView lv = getExpandableListView();
 			for (int i=mListAdapter.getGroupCount()-1; i>=0; i--)
@@ -506,10 +567,105 @@ public class ListActivity extends ExpandableListActivity {
 	}
 
 	protected void addJob(ComponentInfo component, boolean newState) {
+		ToggleBackend backend = getSelectedBackend();
+		boolean hasDirectPermission = checkCallingOrSelfPermission(
+				android.Manifest.permission.CHANGE_COMPONENT_ENABLED_STATE)
+				== PackageManager.PERMISSION_GRANTED;
+		if (backend == ToggleBackend.SHIZUKU && !hasDirectPermission && !prepareShizuku())
+			return;
+
 		Intent intent = new Intent(this, ToggleService.class);
 		intent.putExtra("component", component);
 		intent.putExtra("state", newState);
+		intent.putExtra(ToggleBackend.EXTRA, backend.preferenceValue());
 		startService(intent);
+	}
+
+	private ToggleBackend getSelectedBackend() {
+		return ToggleBackend.fromPreference(mPrefs.getString(
+				PREF_ACCESS_BACKEND, ToggleBackend.AUTO.preferenceValue()));
+	}
+
+	private void showBackendChooser() {
+		final ToggleBackend[] backends = {
+				ToggleBackend.AUTO,
+				ToggleBackend.SHIZUKU,
+				ToggleBackend.ROOT
+		};
+		CharSequence[] labels = {
+				getString(R.string.backend_auto),
+				getString(R.string.backend_shizuku),
+				getString(R.string.backend_root)
+		};
+		int selected = 0;
+		ToggleBackend current = getSelectedBackend();
+		for (int index = 0; index < backends.length; index++) {
+			if (backends[index] == current) {
+				selected = index;
+				break;
+			}
+		}
+
+		new AlertDialog.Builder(this)
+				.setTitle(R.string.privileged_access)
+				.setSingleChoiceItems(labels, selected, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.dismiss();
+						selectBackend(backends[which]);
+					}
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
+	private void selectBackend(ToggleBackend backend) {
+		mPrefs.edit().putString(PREF_ACCESS_BACKEND, backend.preferenceValue()).apply();
+		invalidateOptionsMenu();
+		if (backend == ToggleBackend.SHIZUKU)
+			prepareShizuku();
+	}
+
+	private void showPrivilegedAccessDialog(int message) {
+		showDialog(R.string.privileged_access, getString(message));
+	}
+
+	private void showErrorDialog(CharSequence message) {
+		showDialog(R.string.error, message);
+	}
+
+	private void showDialog(int title, CharSequence message) {
+		new AlertDialog.Builder(this)
+				.setTitle(title)
+				.setMessage(message)
+				.setPositiveButton(android.R.string.ok, null)
+				.show();
+	}
+
+	private boolean prepareShizuku() {
+		switch (mShizukuBackend.getStatus()) {
+		case READY:
+			Toast.makeText(this, R.string.shizuku_ready, Toast.LENGTH_SHORT).show();
+			return true;
+		case PERMISSION_DENIED:
+			showPrivilegedAccessDialog(mShizukuBackend.requestPermission()
+					? R.string.shizuku_permission_requested
+					: R.string.shizuku_permission_denied);
+			return false;
+		case ADB:
+			showPrivilegedAccessDialog(R.string.shizuku_adb_unsupported);
+			return false;
+		case OUTDATED:
+			showPrivilegedAccessDialog(R.string.shizuku_outdated);
+			return false;
+		case NOT_ROOT:
+			showPrivilegedAccessDialog(R.string.shizuku_not_root);
+			return false;
+		case NOT_RUNNING:
+		default:
+			showPrivilegedAccessDialog(R.string.shizuku_not_running);
+			return false;
+		}
 	}
 
 	// TODO: Instead of showing a toast, fade in a custom info bar, then
