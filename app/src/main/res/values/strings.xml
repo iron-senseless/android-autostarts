@@ -37,6 +37,7 @@
     <string name="error">Error</string>
     <string name="warning">Warning</string>
     <string name="info">Info</string>
+    <string name="show_event_info">Show event information</string>
     <string name="receiver_info">Receiver &lt;b&gt;%1$s&lt;/b&gt; handles action &lt;i&gt;%2$s&lt;/i&gt; with priority &lt;b&gt;%3$d&lt;/b&gt;.</string>
     <string name="sys_disable">This is a system component. Do not make changes unless you know what you are doing.</string>
     <!-- The verb (changing) should be at the front of the string -->
