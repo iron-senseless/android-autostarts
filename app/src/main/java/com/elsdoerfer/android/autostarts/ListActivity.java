@@ -668,38 +668,16 @@ public class ListActivity extends ExpandableListActivity {
 		}
 	}
 
-	// TODO: Instead of showing a toast, fade in a custom info bar, then
-	// fade out. This would be an improvement because we could control
-	// it better: Show it longer, but have it disappear when the user
-	// clicks on it (toasts don't receive clicks).
-	// Consider: https://github.com/johnkil/Android-AppMsg
+	/** Shows an event description in the platform's high-contrast toast. */
 	public void showInfoToast(String action) {
-		Object[] data = Actions.MAP.get(action);
-		if (mInfoToast == null) {
-			LayoutInflater inflater = getLayoutInflater();
-			View layout = inflater.inflate(R.layout.detail_toast,
-					(ViewGroup) findViewById(R.id.root));
-			mInfoToast = new Toast(this);
-			mInfoToast.setGravity(Gravity.CENTER_HORIZONTAL | Gravity.BOTTOM, 0, 0);
-			mInfoToast.setDuration(Toast.LENGTH_LONG);
-			mInfoToast.setView(layout);
-		}
-		((TextView)mInfoToast.getView().findViewById(R.id.title)).setText(getIntentName(action));
-		TextView message = ((TextView)mInfoToast.getView().findViewById(android.R.id.message));
-		CharSequence info = "";
-		if (data == null) {
-			message.setVisibility(View.GONE);
-		}
-		else {
-			if (data[2] != null)  // Hide info text both for null and empty string values.
-				info = getResources().getText((Integer)data[2]);
-			if (!info.equals("")) {
-				message.setText(info);
-				message.setVisibility(View.VISIBLE);
-			} else {
-				message.setVisibility(View.GONE);
-			}
-		}
+		CharSequence info = Actions.getDescription(getResources(), action);
+		String message = info.length() > 0
+				? info.toString()
+				: getString(R.string.no_description_available);
+
+		if (mInfoToast != null)
+			mInfoToast.cancel();
+		mInfoToast = Toast.makeText(this, message, Toast.LENGTH_LONG);
 		mInfoToast.show();
 	}
 

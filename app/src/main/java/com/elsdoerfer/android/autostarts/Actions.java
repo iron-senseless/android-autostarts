@@ -4,6 +4,7 @@ import java.util.LinkedHashMap;
 
 import android.appwidget.AppWidgetManager;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.media.AudioManager;
 import android.net.ConnectivityManager;
 import android.net.wifi.WifiManager;
@@ -314,6 +315,18 @@ final class Actions {
 		MAP = new LinkedHashMap<String, Object[]>();
 		for (Object[] action : Actions.ALL)
 			MAP.put((String)action[0], action);
+	}
+
+	/** Returns the user-facing description for a known broadcast action. */
+	static CharSequence getDescription(Resources resources, String action) {
+		Object[] data = MAP.get(action);
+		if (data == null || data.length < 3 || !(data[2] instanceof Integer))
+			return "";
+		return resources.getText((Integer)data[2]);
+	}
+
+	static boolean hasDescription(Resources resources, String action) {
+		return getDescription(resources, action).toString().trim().length() > 0;
 	}
 
 	/**
