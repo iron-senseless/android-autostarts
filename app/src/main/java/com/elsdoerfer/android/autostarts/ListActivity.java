@@ -2,6 +2,7 @@ package com.elsdoerfer.android.autostarts;
 
 import java.util.ArrayList;
 
+import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.ExpandableListActivity;
 import android.app.Fragment;
@@ -380,11 +381,6 @@ public class ListActivity extends ExpandableListActivity {
 		// Reload button disabled while reloading
 		mReloadItem.setEnabled(mLoadTask == null || mLoadTask.getStatus() != AsyncTask.Status.RUNNING);
 
-		ToggleBackend backend = getSelectedBackend();
-		menu.findItem(R.id.backend_auto).setChecked(backend == ToggleBackend.AUTO);
-		menu.findItem(R.id.backend_shizuku).setChecked(backend == ToggleBackend.SHIZUKU);
-		menu.findItem(R.id.backend_root).setChecked(backend == ToggleBackend.ROOT);
-
 		// View/Filter Submenu
 		menu.findItem(R.id.view_changed_only).setChecked(mListAdapter.getShowChangedOnly());
 		menu.findItem(R.id.view_hide_sys_apps).setChecked(mListAdapter.getFilterSystemApps());
@@ -439,18 +435,8 @@ public class ListActivity extends ExpandableListActivity {
 			return true;
 		}
 
-		else if (id == R.id.backend_auto) {
-			selectBackend(ToggleBackend.AUTO);
-			return true;
-		}
-
-		else if (id == R.id.backend_shizuku) {
-			selectBackend(ToggleBackend.SHIZUKU);
-			return true;
-		}
-
-		else if (id == R.id.backend_root) {
-			selectBackend(ToggleBackend.ROOT);
+		else if (id == R.id.backend) {
+			showBackendChooser();
 			return true;
 		}
 
@@ -590,6 +576,39 @@ public class ListActivity extends ExpandableListActivity {
 	private ToggleBackend getSelectedBackend() {
 		return ToggleBackend.fromPreference(mPrefs.getString(
 				PREF_ACCESS_BACKEND, ToggleBackend.AUTO.preferenceValue()));
+	}
+
+	private void showBackendChooser() {
+		final ToggleBackend[] backends = {
+				ToggleBackend.AUTO,
+				ToggleBackend.SHIZUKU,
+				ToggleBackend.ROOT
+		};
+		CharSequence[] labels = {
+				getString(R.string.backend_auto),
+				getString(R.string.backend_shizuku),
+				getString(R.string.backend_root)
+		};
+		int selected = 0;
+		ToggleBackend current = getSelectedBackend();
+		for (int index = 0; index < backends.length; index++) {
+			if (backends[index] == current) {
+				selected = index;
+				break;
+			}
+		}
+
+		new AlertDialog.Builder(this)
+				.setTitle(R.string.privileged_access)
+				.setSingleChoiceItems(labels, selected, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						selectBackend(backends[which]);
+						dialog.dismiss();
+					}
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
 	}
 
 	private void selectBackend(ToggleBackend backend) {

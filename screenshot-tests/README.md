@@ -11,6 +11,7 @@ reintroduce while modernising this legacy UI:
 - light expanded event group, including compact app rows;
 - light package grouping;
 - light overflow menu;
+- light privileged-access radio selector;
 - dark event list; and
 - dark expanded event group, including label contrast.
 
