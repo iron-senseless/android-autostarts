@@ -25,13 +25,12 @@
         android:textStyle="bold"
         />
 
-    <!-- Keep the full info target clear of the fast-scroll gesture gutter. -->
     <ImageView
         android:id="@+id/show_info"
         android:layout_width="48dp"
         android:layout_height="48dp"
         android:layout_gravity="center_vertical"
-        android:layout_marginEnd="48dp"
+        android:layout_marginEnd="8dp"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/show_event_info"
         android:padding="12dp"

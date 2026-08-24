@@ -1,14 +1,22 @@
 package com.elsdoerfer.android.autostarts.compat;
 
 import android.content.Context;
+import android.graphics.Rect;
 import android.util.AttributeSet;
+import android.view.MotionEvent;
+import android.view.View;
 import android.widget.ExpandableListView;
+
+import com.elsdoerfer.android.autostarts.R;
 
 
 /**
  * To use fastScroll="true" with a ExpandableListView.
  */
 public class FixedExpandableListView extends ExpandableListView {
+
+	private final Rect mInfoTouchBounds = new Rect();
+	private View mInfoTouchTarget;
 
 	public FixedExpandableListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -51,4 +59,72 @@ public class FixedExpandableListView extends ExpandableListView {
 	public int getFlatListPosition(long packedPosition) {
 		return getPackedPositionGroup(packedPosition);
     }
+
+	/**
+	 * ExpandableListView handles a touch on a child row itself, before a
+	 * clickable descendant can reliably receive it. This is especially
+	 * noticeable when the row has an info affordance near the fast-scroll
+	 * gutter: the touch either expands the group or opens the event dialog.
+	 *
+	 * Route touches inside a visible event-info target directly to that target
+	 * before the list's row and fast-scroll handlers see them.
+	 */
+	@Override
+	public boolean dispatchTouchEvent(MotionEvent event) {
+		int action = event.getActionMasked();
+		if (action == MotionEvent.ACTION_DOWN) {
+			clearInfoTouchTarget();
+			mInfoTouchTarget = findInfoTouchTarget(event);
+			if (mInfoTouchTarget != null) {
+				mInfoTouchTarget.setPressed(true);
+				return true;
+			}
+		}
+		else if (mInfoTouchTarget != null) {
+			View target = mInfoTouchTarget;
+			if (action == MotionEvent.ACTION_UP) {
+				boolean clicked = isInsideInfoTarget(target, event);
+				clearInfoTouchTarget();
+				if (clicked)
+					target.performClick();
+			}
+			else if (action == MotionEvent.ACTION_MOVE) {
+				target.setPressed(isInsideInfoTarget(target, event));
+			}
+			else if (action == MotionEvent.ACTION_CANCEL) {
+				clearInfoTouchTarget();
+			}
+			return true;
+		}
+		return super.dispatchTouchEvent(event);
+	}
+
+	private View findInfoTouchTarget(MotionEvent event) {
+		int position = pointToPosition((int) event.getX(), (int) event.getY());
+		if (position == INVALID_POSITION)
+			return null;
+
+		View row = getChildAt(position - getFirstVisiblePosition());
+		if (row == null)
+			return null;
+
+		View info = row.findViewById(R.id.show_info);
+		return isInsideInfoTarget(info, event) ? info : null;
+	}
+
+	private boolean isInsideInfoTarget(View target, MotionEvent event) {
+		return target != null
+				&& target.getVisibility() == View.VISIBLE
+				&& target.isEnabled()
+				&& target.getGlobalVisibleRect(mInfoTouchBounds)
+				&& mInfoTouchBounds.contains((int) event.getRawX(),
+						(int) event.getRawY());
+	}
+
+	private void clearInfoTouchTarget() {
+		if (mInfoTouchTarget != null) {
+			mInfoTouchTarget.setPressed(false);
+			mInfoTouchTarget = null;
+		}
+	}
 }
