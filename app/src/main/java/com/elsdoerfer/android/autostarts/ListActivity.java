@@ -2,6 +2,7 @@ package com.elsdoerfer.android.autostarts;
 
 import java.util.ArrayList;
 
+import android.app.AlertDialog;
 import android.app.DialogFragment;
 import android.app.ExpandableListActivity;
 import android.app.Fragment;
@@ -79,10 +80,12 @@ public class ListActivity extends ExpandableListActivity {
 					if (requestCode != ShizukuBackend.PERMISSION_REQUEST_CODE)
 						return;
 
-					Toast.makeText(ListActivity.this,
-							grantResult == PackageManager.PERMISSION_GRANTED
-									? R.string.shizuku_ready : R.string.shizuku_permission_denied,
-							Toast.LENGTH_LONG).show();
+					if (grantResult == PackageManager.PERMISSION_GRANTED) {
+						Toast.makeText(ListActivity.this, R.string.shizuku_ready,
+								Toast.LENGTH_SHORT).show();
+					} else {
+						showPrivilegedAccessDialog(R.string.shizuku_permission_denied);
+					}
 					invalidateOptionsMenu();
 				}
 			};
@@ -139,6 +142,12 @@ public class ListActivity extends ExpandableListActivity {
 					}
 
 					mListAdapter.notifyDataSetInvalidated();
+				}
+
+				@Override
+				public void onStateChangeFailed(ComponentInfo component) {
+					showErrorDialog(getString(R.string.state_change_failed,
+							component.getLabel(), component.componentName));
 				}
 			});
 
@@ -380,11 +389,6 @@ public class ListActivity extends ExpandableListActivity {
 		// Reload button disabled while reloading
 		mReloadItem.setEnabled(mLoadTask == null || mLoadTask.getStatus() != AsyncTask.Status.RUNNING);
 
-		ToggleBackend backend = getSelectedBackend();
-		menu.findItem(R.id.backend_auto).setChecked(backend == ToggleBackend.AUTO);
-		menu.findItem(R.id.backend_shizuku).setChecked(backend == ToggleBackend.SHIZUKU);
-		menu.findItem(R.id.backend_root).setChecked(backend == ToggleBackend.ROOT);
-
 		// View/Filter Submenu
 		menu.findItem(R.id.view_changed_only).setChecked(mListAdapter.getShowChangedOnly());
 		menu.findItem(R.id.view_hide_sys_apps).setChecked(mListAdapter.getFilterSystemApps());
@@ -439,18 +443,8 @@ public class ListActivity extends ExpandableListActivity {
 			return true;
 		}
 
-		else if (id == R.id.backend_auto) {
-			selectBackend(ToggleBackend.AUTO);
-			return true;
-		}
-
-		else if (id == R.id.backend_shizuku) {
-			selectBackend(ToggleBackend.SHIZUKU);
-			return true;
-		}
-
-		else if (id == R.id.backend_root) {
-			selectBackend(ToggleBackend.ROOT);
+		else if (id == R.id.backend) {
+			showBackendChooser();
 			return true;
 		}
 
@@ -592,11 +586,60 @@ public class ListActivity extends ExpandableListActivity {
 				PREF_ACCESS_BACKEND, ToggleBackend.AUTO.preferenceValue()));
 	}
 
+	private void showBackendChooser() {
+		final ToggleBackend[] backends = {
+				ToggleBackend.AUTO,
+				ToggleBackend.SHIZUKU,
+				ToggleBackend.ROOT
+		};
+		CharSequence[] labels = {
+				getString(R.string.backend_auto),
+				getString(R.string.backend_shizuku),
+				getString(R.string.backend_root)
+		};
+		int selected = 0;
+		ToggleBackend current = getSelectedBackend();
+		for (int index = 0; index < backends.length; index++) {
+			if (backends[index] == current) {
+				selected = index;
+				break;
+			}
+		}
+
+		new AlertDialog.Builder(this)
+				.setTitle(R.string.privileged_access)
+				.setSingleChoiceItems(labels, selected, new DialogInterface.OnClickListener() {
+					@Override
+					public void onClick(DialogInterface dialog, int which) {
+						dialog.dismiss();
+						selectBackend(backends[which]);
+					}
+				})
+				.setNegativeButton(android.R.string.cancel, null)
+				.show();
+	}
+
 	private void selectBackend(ToggleBackend backend) {
 		mPrefs.edit().putString(PREF_ACCESS_BACKEND, backend.preferenceValue()).apply();
 		invalidateOptionsMenu();
 		if (backend == ToggleBackend.SHIZUKU)
 			prepareShizuku();
+	}
+
+	private void showPrivilegedAccessDialog(int message) {
+		showDialog(R.string.privileged_access, getString(message));
+	}
+
+	private void showErrorDialog(CharSequence message) {
+		showDialog(R.string.error, message);
+	}
+
+	private void showDialog(int title, CharSequence message) {
+		new AlertDialog.Builder(this)
+				.setTitle(title)
+				.setMessage(message)
+				.setPositiveButton(android.R.string.ok, null)
+				.show();
 	}
 
 	private boolean prepareShizuku() {
@@ -605,26 +648,22 @@ public class ListActivity extends ExpandableListActivity {
 			Toast.makeText(this, R.string.shizuku_ready, Toast.LENGTH_SHORT).show();
 			return true;
 		case PERMISSION_DENIED:
-			if (mShizukuBackend.requestPermission()) {
-				Toast.makeText(this, R.string.shizuku_permission_requested,
-						Toast.LENGTH_LONG).show();
-			} else {
-				Toast.makeText(this, R.string.shizuku_permission_denied,
-						Toast.LENGTH_LONG).show();
-			}
+			showPrivilegedAccessDialog(mShizukuBackend.requestPermission()
+					? R.string.shizuku_permission_requested
+					: R.string.shizuku_permission_denied);
 			return false;
 		case ADB:
-			Toast.makeText(this, R.string.shizuku_adb_unsupported, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_adb_unsupported);
 			return false;
 		case OUTDATED:
-			Toast.makeText(this, R.string.shizuku_outdated, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_outdated);
 			return false;
 		case NOT_ROOT:
-			Toast.makeText(this, R.string.shizuku_not_root, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_not_root);
 			return false;
 		case NOT_RUNNING:
 		default:
-			Toast.makeText(this, R.string.shizuku_not_running, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_not_running);
 			return false;
 		}
 	}

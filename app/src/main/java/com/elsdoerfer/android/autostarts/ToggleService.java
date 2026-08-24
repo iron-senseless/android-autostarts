@@ -45,6 +45,9 @@ public class ToggleService extends Service {
 		 * or finished processing the current one).
 		 */
 		void onQueueModified(ComponentInfo component, boolean isAdded);
+
+		/** Called when an attempted component-state change could not complete. */
+		void onStateChangeFailed(ComponentInfo component);
 	}
 
 	/**
@@ -165,22 +168,18 @@ public class ToggleService extends Service {
 					@Override
 					public void run() {
 						if (!success) {
-							// Now that we do state toggling in the background in the
-							// service, error handling poses new challenges. For now,
-							// just show a toast. However, I never liked toasts, of course.
-							// Options include notifications, as well as additional clever
-							// integration with an activity that might be in the foreground.
-							Resources res = getResources();
-							Toast toast = Toast.makeText(
-								ToggleService.this,
-								String.format(res.getString(R.string.state_change_failed),
-									// TODO: Instead of the component name, it would be
-									// better to refer to the event the user wanted to
-									// to remove the component from. Unfortunately, we do
-									// not even carry this information along.
-									component.getLabel(), component.componentName),
-								5000);
-							toast.show();
+							ToggleServiceListener listener = mListener;
+							if (listener != null) {
+								listener.onStateChangeFailed(component);
+							} else {
+								// The foreground activity normally presents this as a dialog.
+								// Keep a fallback for a job that finishes after it disconnects.
+								Resources res = getResources();
+								Toast.makeText(ToggleService.this,
+										String.format(res.getString(R.string.state_change_failed),
+												component.getLabel(), component.componentName),
+										Toast.LENGTH_LONG).show();
+							}
 						}
 
 						Log.d(Utils.TAG, "Processing "+component+" done");

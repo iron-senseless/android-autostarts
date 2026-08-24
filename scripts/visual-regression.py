@@ -456,6 +456,12 @@ def main():
         passed = process_scene(
             arguments.mode, "light-overflow", device.stable_screenshot("light-overflow")) and passed
 
+        device.tap_text("Privileged access")
+        device.wait_for_text("Shizuku / Sui (root)")
+        passed = process_scene(
+            arguments.mode, "light-privileged-access",
+            device.stable_screenshot("light-privileged-access")) and passed
+
         device.prepare(night=True)
         device.install_and_launch()
         device.warm_action_bar()
