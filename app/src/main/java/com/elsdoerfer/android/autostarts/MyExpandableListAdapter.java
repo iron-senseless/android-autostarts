@@ -302,7 +302,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 		 */
 		protected void setActionInfo(View root, final String action) {
 			View v = root.findViewById(R.id.show_info);
-			if (!Actions.MAP.containsKey(action))
+			if (!Actions.hasDescription(mParent.mActivity.getResources(), action))
 				v.setVisibility(View.GONE);
 			else {
 				v.setOnClickListener(new OnClickListener() {
