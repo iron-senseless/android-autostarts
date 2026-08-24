@@ -80,10 +80,12 @@ public class ListActivity extends ExpandableListActivity {
 					if (requestCode != ShizukuBackend.PERMISSION_REQUEST_CODE)
 						return;
 
-					Toast.makeText(ListActivity.this,
-							grantResult == PackageManager.PERMISSION_GRANTED
-									? R.string.shizuku_ready : R.string.shizuku_permission_denied,
-							Toast.LENGTH_LONG).show();
+					if (grantResult == PackageManager.PERMISSION_GRANTED) {
+						Toast.makeText(ListActivity.this, R.string.shizuku_ready,
+								Toast.LENGTH_SHORT).show();
+					} else {
+						showPrivilegedAccessDialog(R.string.shizuku_permission_denied);
+					}
 					invalidateOptionsMenu();
 				}
 			};
@@ -140,6 +142,12 @@ public class ListActivity extends ExpandableListActivity {
 					}
 
 					mListAdapter.notifyDataSetInvalidated();
+				}
+
+				@Override
+				public void onStateChangeFailed(ComponentInfo component) {
+					showErrorDialog(getString(R.string.state_change_failed,
+							component.getLabel(), component.componentName));
 				}
 			});
 
@@ -603,8 +611,8 @@ public class ListActivity extends ExpandableListActivity {
 				.setSingleChoiceItems(labels, selected, new DialogInterface.OnClickListener() {
 					@Override
 					public void onClick(DialogInterface dialog, int which) {
-						selectBackend(backends[which]);
 						dialog.dismiss();
+						selectBackend(backends[which]);
 					}
 				})
 				.setNegativeButton(android.R.string.cancel, null)
@@ -618,32 +626,44 @@ public class ListActivity extends ExpandableListActivity {
 			prepareShizuku();
 	}
 
+	private void showPrivilegedAccessDialog(int message) {
+		showDialog(R.string.privileged_access, getString(message));
+	}
+
+	private void showErrorDialog(CharSequence message) {
+		showDialog(R.string.error, message);
+	}
+
+	private void showDialog(int title, CharSequence message) {
+		new AlertDialog.Builder(this)
+				.setTitle(title)
+				.setMessage(message)
+				.setPositiveButton(android.R.string.ok, null)
+				.show();
+	}
+
 	private boolean prepareShizuku() {
 		switch (mShizukuBackend.getStatus()) {
 		case READY:
 			Toast.makeText(this, R.string.shizuku_ready, Toast.LENGTH_SHORT).show();
 			return true;
 		case PERMISSION_DENIED:
-			if (mShizukuBackend.requestPermission()) {
-				Toast.makeText(this, R.string.shizuku_permission_requested,
-						Toast.LENGTH_LONG).show();
-			} else {
-				Toast.makeText(this, R.string.shizuku_permission_denied,
-						Toast.LENGTH_LONG).show();
-			}
+			showPrivilegedAccessDialog(mShizukuBackend.requestPermission()
+					? R.string.shizuku_permission_requested
+					: R.string.shizuku_permission_denied);
 			return false;
 		case ADB:
-			Toast.makeText(this, R.string.shizuku_adb_unsupported, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_adb_unsupported);
 			return false;
 		case OUTDATED:
-			Toast.makeText(this, R.string.shizuku_outdated, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_outdated);
 			return false;
 		case NOT_ROOT:
-			Toast.makeText(this, R.string.shizuku_not_root, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_not_root);
 			return false;
 		case NOT_RUNNING:
 		default:
-			Toast.makeText(this, R.string.shizuku_not_running, Toast.LENGTH_LONG).show();
+			showPrivilegedAccessDialog(R.string.shizuku_not_running);
 			return false;
 		}
 	}
