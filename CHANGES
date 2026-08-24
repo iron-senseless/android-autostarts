@@ -1,3 +1,9 @@
+2.0 (2026-08-24)
+    * Updated for current Android releases; Autostarts now requires Android 7.0 or later.
+    * Restored receiver discovery on Android 11 and later.
+    * Refreshed the interface with light and dark themes, larger touch targets, and improved accessibility.
+    * Added optional root-backed Shizuku and Sui access for changing receiver states.
+
 1.9.8 (2017-03-13)
     * Fix on 64-bit architectures.
 
