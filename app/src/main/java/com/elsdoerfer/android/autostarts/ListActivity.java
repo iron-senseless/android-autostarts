@@ -345,8 +345,10 @@ public class ListActivity extends ExpandableListActivity {
 			@Override
 			public boolean onQueryTextChange(String query) {
 				mListAdapter.setTextFilter(query);
-				updateEmptyText();
+				// setEmptyView() can trigger a layout pass, so notify before it
+				// observes the rebuilt adapter data.
 				mListAdapter.notifyDataSetChanged();
+				updateEmptyText();
 				return true;
 
 			}

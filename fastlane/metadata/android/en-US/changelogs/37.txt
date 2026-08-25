@@ -1,0 +1,6 @@
+Autostarts is back for current Android releases.
+
+- Updated receiver discovery and the interface for modern Android.
+- Added light and dark themes, larger touch targets, and accessibility improvements.
+- Added optional root-backed Shizuku and Sui access for changing receiver states.
+- Fixed a crash when restoring a search after the activity is recreated.
