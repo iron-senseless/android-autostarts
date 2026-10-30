@@ -343,10 +343,9 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 		}
 
 		/**
-		 * Helper for child classes to set the text of an item that
-		 * represents a component. This adds the component label to "base"
-		 * in the rare case one exists, and also makes sure to strike
-		 * the text if the component is disabled.
+		 * Helper for child classes to set the text of a component.
+		 * Preserve the component label when present. The dedicated switch,
+		 * rather than a strikethrough span, indicates the enabled state.
 		 */
 		protected void setComponentText(TextView t, ComponentInfo comp,
 				String base) {
