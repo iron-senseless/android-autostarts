@@ -21,6 +21,7 @@
   <string name="error">Ошибка</string>
   <string name="warning">Внимание</string>
   <string name="info">Информация</string>
+  <string name="receiver_switch_label">Ресивер %1$s</string>
   <string name="receiver_info">"Получатель "<b>%1$s</b>" выполняет действие "<i>%2$s</i>" с приоритетом "<b>%3$d</b>.</string>
   <string name="close_help">Закрыть помощь и вернуться в программу</string>
 </resources>
