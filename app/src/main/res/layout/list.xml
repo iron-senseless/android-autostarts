@@ -14,7 +14,7 @@
                android:layout_height="match_parent"
                android:layout_weight="1"
                android:drawSelectorOnTop="false"
-               android:fastScrollEnabled="true" />
+               android:fastScrollEnabled="false" />
 
      <TextView android:id="@+id/empty_text"
                android:layout_width="match_parent"

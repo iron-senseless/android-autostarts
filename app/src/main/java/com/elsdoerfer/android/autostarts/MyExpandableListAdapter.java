@@ -10,8 +10,6 @@ import java.util.HashMap;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.text.SpannableStringBuilder;
-import android.text.style.StrikethroughSpan;
 import android.util.TypedValue;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -20,11 +18,13 @@ import android.view.ViewGroup;
 import android.widget.BaseExpandableListAdapter;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
+import android.widget.Switch;
 import android.widget.TextView;
 
 import com.elsdoerfer.android.autostarts.db.ComponentInfo;
 import com.elsdoerfer.android.autostarts.db.IntentFilterInfo;
 import com.elsdoerfer.android.autostarts.db.PackageInfo;
+import com.elsdoerfer.android.autostarts.opt.RootFeatures;
 
 import static com.elsdoerfer.android.autostarts.Utils.containsIgnoreCase;
 
@@ -290,7 +290,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 		 */
 		protected View getView(View existing, String tag, int layout,
 				ViewGroup parent) {
-			if (existing == null || (String)existing.getTag() != "tag")
+			if (existing == null || !tag.equals(existing.getTag()))
 				return mParent.mInflater.inflate(layout, parent, false);
 			else
 				return existing;
@@ -305,6 +305,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 			if (!Actions.hasDescription(mParent.mActivity.getResources(), action))
 				v.setVisibility(View.GONE);
 			else {
+				v.setVisibility(View.VISIBLE);
 				v.setOnClickListener(new OnClickListener() {
 					public void onClick(View _v) {
 						mParent.mActivity.showInfoToast(action);
@@ -342,20 +343,52 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 		}
 
 		/**
-		 * Helper for child classes to set the text of an item that
-		 * represents a component. This adds the component label to "base"
-		 * in the rare case one exists, and also makes sure to strike
-		 * the text if the component is disabled.
+		 * Helper for child classes to set the text of a component.
+		 * Preserve the component label when present. The dedicated switch,
+		 * rather than a strikethrough span, indicates the enabled state.
 		 */
 		protected void setComponentText(TextView t, ComponentInfo comp,
 				String base) {
-			SpannableStringBuilder fullText = new SpannableStringBuilder();
-			fullText.append(base);
+			StringBuilder fullText = new StringBuilder(base);
 			if (comp.componentLabel != null && !comp.componentLabel.equals(""))
-				fullText.append(" ("+comp.componentLabel+")");
-			if (!comp.isCurrentlyEnabled())
-				fullText.setSpan(new StrikethroughSpan(), 0, fullText.length(), 0);
-			t.setText(fullText);
+				fullText.append(" (").append(comp.componentLabel).append(")");
+			t.setText(fullText.toString());
+		}
+
+		/**
+		 * Bind a receiver switch in either grouping mode. A switch always reflects
+		 * the committed component state; while a request is processing, the existing
+		 * service queue owns the state and the spinner replaces the switch.
+		 */
+		protected void bindReceiverSwitch(View root, final ComponentInfo component) {
+			final Switch receiverSwitch = (Switch) root.findViewById(R.id.receiver_switch);
+			ProgressBar spinner = (ProgressBar) root.findViewById(R.id.spinner);
+			ToggleService service = mParent.mActivity.mToggleService;
+			boolean pending = service != null && service.has(component);
+			boolean enabled = service != null
+					? service.getQueuedState(component, component.isCurrentlyEnabled())
+					: component.isCurrentlyEnabled();
+
+			// Avoid generating a toggle request while binding a recycled row.
+			receiverSwitch.setOnClickListener(null);
+			receiverSwitch.setChecked(enabled);
+			receiverSwitch.setContentDescription(mParent.mActivity.getString(
+					R.string.receiver_switch_label, component.componentName));
+			receiverSwitch.setEnabled(RootFeatures.Enabled && !pending);
+			receiverSwitch.setVisibility(pending ? View.GONE : View.VISIBLE);
+			spinner.setVisibility(pending ? View.VISIBLE : View.GONE);
+			receiverSwitch.setOnClickListener(new OnClickListener() {
+				@Override
+				public void onClick(View view) {
+					Switch clicked = (Switch) view;
+					boolean requestedState = clicked.isChecked();
+					// The current state changes only after ToggleService confirms it.
+					// Restore the visual state immediately if permission is denied,
+					// the system-app confirmation is cancelled, or a job is pending.
+					clicked.setChecked(!requestedState);
+					mParent.mActivity.requestReceiverToggle(component, requestedState);
+				}
+			});
 		}
 	}
 
@@ -436,13 +469,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 			setTextStyle(title, comp.packageInfo, comp);
 			setComponentText(title, comp, comp.getLabel());
 
-			// Hide the spinner by default
-			ProgressBar spinner = (ProgressBar)v.findViewById(R.id.spinner);
-			ToggleService toggleService = mParent.mActivity.mToggleService;
-			if (toggleService != null && toggleService.has(comp))
-				spinner.setVisibility(View.VISIBLE);
-			else
-				spinner.setVisibility(View.GONE);
+			bindReceiverSwitch(v, comp);
 
 			return v;
 		}
@@ -581,18 +608,7 @@ public class MyExpandableListAdapter extends BaseExpandableListAdapter {
 			setComponentText(text, info.componentInfo,
 					mParent.mActivity.getIntentName(info.action));
 
-			ImageView infoIcon = ((ImageView)v.findViewById(R.id.show_info));
-			ProgressBar spinner = ((ProgressBar)v.findViewById(R.id.spinner));
-
-			ToggleService toggleService = mParent.mActivity.mToggleService;
-			if (toggleService != null && toggleService.has(info.componentInfo)) {
-				spinner.setVisibility(View.VISIBLE);
-				infoIcon.setVisibility(View.GONE);
-			}
-			else {
-				spinner.setVisibility(View.GONE);
-				infoIcon.setVisibility(View.VISIBLE);
-			}
+			bindReceiverSwitch(v, info.componentInfo);
 
 			return v;
 		}

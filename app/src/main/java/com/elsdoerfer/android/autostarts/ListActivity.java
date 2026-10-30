@@ -568,6 +568,30 @@ public class ListActivity extends ExpandableListActivity {
 		newFragment.show(ft, "details");
 	}
 
+	/**
+	 * Request a change from an inline receiver switch. A system component
+	 * always requires confirmation, preserving the warning shown by the
+	 * receiver-details dialog before this UI was introduced.
+	 */
+	void requestReceiverToggle(final ComponentInfo component, final boolean newState) {
+		if (component.packageInfo.isSystem) {
+			new AlertDialog.Builder(this)
+					.setTitle(R.string.warning)
+					.setMessage(R.string.sys_disable)
+					.setNegativeButton(android.R.string.cancel, null)
+					.setPositiveButton(newState ? R.string.enable : R.string.disable,
+							new DialogInterface.OnClickListener() {
+								@Override
+								public void onClick(DialogInterface dialog, int which) {
+									addJob(component, newState);
+								}
+							})
+					.show();
+		} else {
+			addJob(component, newState);
+		}
+	}
+
 	protected void addJob(ComponentInfo component, boolean newState) {
 		ToggleBackend backend = getSelectedBackend();
 		boolean hasDirectPermission = checkCallingOrSelfPermission(

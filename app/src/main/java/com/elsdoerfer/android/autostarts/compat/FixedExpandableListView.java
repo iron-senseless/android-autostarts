@@ -15,8 +15,8 @@ import com.elsdoerfer.android.autostarts.R;
  */
 public class FixedExpandableListView extends ExpandableListView {
 
-	private final Rect mInfoTouchBounds = new Rect();
-	private View mInfoTouchTarget;
+	private final Rect mControlTouchBounds = new Rect();
+	private View mControlTouchTarget;
 
 	public FixedExpandableListView(Context context, AttributeSet attrs) {
 		super(context, attrs);
@@ -61,45 +61,45 @@ public class FixedExpandableListView extends ExpandableListView {
     }
 
 	/**
-	 * ExpandableListView handles a touch on a child row itself, before a
-	 * clickable descendant can reliably receive it. This is especially
-	 * noticeable when the row has an info affordance near the fast-scroll
-	 * gutter: the touch either expands the group or opens the event dialog.
+	 * ExpandableListView handles child-row touches before descendants reliably
+	 * receive them. Dispatch to interactive controls (including the receiver
+	 * switches) before the list handles row clicks or scrolling.
 	 *
-	 * Route touches inside a visible event-info target directly to that target
-	 * before the list's row and fast-scroll handlers see them.
+	 * Ordinary touches outside these controls still go to ExpandableListView.
+	 * This is also important near the fast-scroll gutter.
 	 */
 	@Override
 	public boolean dispatchTouchEvent(MotionEvent event) {
 		int action = event.getActionMasked();
 		if (action == MotionEvent.ACTION_DOWN) {
-			clearInfoTouchTarget();
-			mInfoTouchTarget = findInfoTouchTarget(event);
-			if (mInfoTouchTarget != null) {
-				mInfoTouchTarget.setPressed(true);
+			clearControlTouchTarget();
+			mControlTouchTarget = findControlTouchTarget(event);
+			if (mControlTouchTarget != null) {
+				mControlTouchTarget.setPressed(true);
 				return true;
 			}
 		}
-		else if (mInfoTouchTarget != null) {
-			View target = mInfoTouchTarget;
+		else if (mControlTouchTarget != null) {
+			View target = mControlTouchTarget;
 			if (action == MotionEvent.ACTION_UP) {
-				boolean clicked = isInsideInfoTarget(target, event);
-				clearInfoTouchTarget();
+				boolean clicked = isInsideControl(target, event);
+				clearControlTouchTarget();
 				if (clicked)
 					target.performClick();
 			}
 			else if (action == MotionEvent.ACTION_MOVE) {
-				target.setPressed(isInsideInfoTarget(target, event));
+				target.setPressed(isInsideControl(target, event));
 			}
-			else if (action == MotionEvent.ACTION_CANCEL) {
-				clearInfoTouchTarget();
+			else if (action == MotionEvent.ACTION_CANCEL
+					|| action == MotionEvent.ACTION_POINTER_DOWN) {
+				clearControlTouchTarget();
 			}
 			return true;
 		}
 		return super.dispatchTouchEvent(event);
 	}
 
-	private View findInfoTouchTarget(MotionEvent event) {
+	private View findControlTouchTarget(MotionEvent event) {
 		int position = pointToPosition((int) event.getX(), (int) event.getY());
 		if (position == INVALID_POSITION)
 			return null;
@@ -108,23 +108,29 @@ public class FixedExpandableListView extends ExpandableListView {
 		if (row == null)
 			return null;
 
+		// Receiver switches must win over the list's child-row click handler.
+		View receiverSwitch = row.findViewById(R.id.receiver_switch);
+		if (isInsideControl(receiverSwitch, event))
+			return receiverSwitch;
+
+		// Preserve the existing custom routing for event-info icons.
 		View info = row.findViewById(R.id.show_info);
-		return isInsideInfoTarget(info, event) ? info : null;
+		return isInsideControl(info, event) ? info : null;
 	}
 
-	private boolean isInsideInfoTarget(View target, MotionEvent event) {
+	private boolean isInsideControl(View target, MotionEvent event) {
 		return target != null
 				&& target.getVisibility() == View.VISIBLE
 				&& target.isEnabled()
-				&& target.getGlobalVisibleRect(mInfoTouchBounds)
-				&& mInfoTouchBounds.contains((int) event.getRawX(),
+				&& target.getGlobalVisibleRect(mControlTouchBounds)
+				&& mControlTouchBounds.contains((int) event.getRawX(),
 						(int) event.getRawY());
 	}
 
-	private void clearInfoTouchTarget() {
-		if (mInfoTouchTarget != null) {
-			mInfoTouchTarget.setPressed(false);
-			mInfoTouchTarget = null;
+	private void clearControlTouchTarget() {
+		if (mControlTouchTarget != null) {
+			mControlTouchTarget.setPressed(false);
+			mControlTouchTarget = null;
 		}
 	}
 }
