@@ -1,55 +1,53 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="wrap_content"
+    android:layout_height="48dp"
     android:orientation="horizontal"
-    android:padding="0dp"
     android:tag="pkg-child">
-
-    <!-- Note how the padding is applied not to the parent,
-         but to each individual child; The idea is to make
-         the clickable area of the "show info" icon as
-         large as possible. -->
 
     <TextView
         android:id="@+id/title"
-        android:layout_width="wrap_content"
-        android:layout_gravity="center_vertical"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
         android:layout_weight="1"
         android:singleLine="true"
         android:ellipsize="end"
-        android:layout_height="48dp"
-        android:paddingEnd="5dip"
-        android:paddingStart="25dip"
+        android:paddingStart="25dp"
+        android:paddingEnd="5dp"
         android:gravity="center_vertical"
-        android:textColor="?android:attr/textColorPrimary"/>
+        android:textColor="?android:attr/textColorPrimary" />
 
     <ImageView
         android:id="@+id/show_info"
         android:layout_width="48dp"
-        android:layout_height="48dp"
-        android:layout_gravity="center_vertical"
-        android:layout_marginEnd="8dp"
+        android:layout_height="match_parent"
         android:background="?android:attr/selectableItemBackgroundBorderless"
         android:contentDescription="@string/show_event_info"
         android:padding="12dp"
         android:scaleType="center"
         android:src="@drawable/ic_action_info_outline"
-        android:tint="?android:attr/textColorSecondary"/>
+        android:tint="?android:attr/textColorSecondary" />
 
-    <!--
-        TODO: I would prefer to use a single control for both the icon and activity spinner, but
-        am unable to reset the ProgressBar drawable to the default once changed, see:
-          http://stackoverflow.com/questions/10432203/obtain-default-attribute-values-from-an-android-theme-at-runtime/15839354#15839354
-          http://stackoverflow.com/questions/9398610/how-to-get-the-attr-reference-in-code
-    -->
-    <ProgressBar
-        android:id="@+id/spinner"
-        android:layout_width="28dp"
-        android:layout_gravity="center_vertical"
-        android:layout_height="48dp"
-        android:indeterminate="true"
-        android:visibility="visible" android:layout_marginStart="6dp"
-        android:layout_marginEnd="7dp"/>
+    <FrameLayout
+        android:layout_width="72dp"
+        android:layout_height="match_parent"
+        android:layout_marginEnd="8dp">
+
+        <Switch
+            android:id="@+id/receiver_switch"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:showText="false"
+            android:focusable="false" />
+
+        <ProgressBar
+            android:id="@+id/spinner"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:layout_gravity="center"
+            android:indeterminate="true"
+            android:visibility="gone" />
+    </FrameLayout>
 
 </LinearLayout>
