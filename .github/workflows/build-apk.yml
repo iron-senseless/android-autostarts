@@ -26,11 +26,12 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Configure Android SDK
-        uses: android-actions/setup-android@v3
-
+      # Ubuntu runners already include a working Android SDK and sdkmanager.
+      # setup-android@v3 attempts to install the removed legacy SDK "tools" package.
       - name: Install Android platform and build tools
-        run: sdkmanager "platforms;android-36" "build-tools;35.0.0"
+        run: |
+          sdkmanager --version
+          sdkmanager --install "platforms;android-36" "build-tools;35.0.0"
 
       - name: Configure Gradle cache
         uses: gradle/actions/setup-gradle@v4
